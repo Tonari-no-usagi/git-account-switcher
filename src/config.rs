@@ -5,10 +5,13 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 
 /// 対応している言語
+/// 対応している言語を表す列挙型
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Default)]
 pub enum Language {
+    /// 英語 (デフォルト)
     #[default]
     En,
+    /// 日本語
     Ja,
 }
 
@@ -21,31 +24,38 @@ impl std::fmt::Display for Language {
     }
 }
 
-/// アプリケーション全体の設定
+/// アプリケーション全体の共通設定を保持する構造体
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
 pub struct AppConfig {
-    /// 言語設定
+    /// 言語設定（`Option` で管理し、未設定時は起動時に尋ねる）
     pub language: Option<Language>,
 
-    /// デフォルトのアカウント名
+    /// デフォルトで使用する GitHub アカウントのニックネーム
     pub default_account: Option<String>,
     
-    /// 登録されているアカウント一覧
+    /// 登録されているアカウントのニックネームからアカウント設定へのマップ
     #[serde(default)]
     pub accounts: HashMap<String, AccountConfig>,
 
-    /// ディレクトリごとのルール
+    /// ディレクトリの絶対パスからアカウントのニックネームへのマップ
+    /// 
+    /// 特定のディレクトリ配下で Git コマンドを実行する際に、どのアカウントを使用するかを定義します。
     #[serde(default)]
     pub path_rules: HashMap<String, String>,
 }
 
-/// 個別のアカウント情報
+/// 個別のアカウント情報を保持する構造体
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct AccountConfig {
+    /// GitHub のユーザー名
     pub username: String,
 }
 
 impl AppConfig {
+    /// 設定ファイルの保存先パスを取得します。
+    /// 
+    /// OS 標準の設定ディレクトリ（Windows の場合は AppData/Roaming など）内の
+    /// `gas/config.toml` を返します。
     fn get_config_path() -> Result<PathBuf> {
         let config_dir = dirs::config_dir()
             .context("Could not determine config directory")?
@@ -58,10 +68,22 @@ impl AppConfig {
         Ok(config_dir.join("config.toml"))
     }
 
+    /// デフォルトのパスから設定を読み込みます。
+    /// ファイルが存在しない場合は `AppConfig::default()` を返します。
+    ///
+    /// # Errors
+    /// ファイルの読み込みまたはパースに失敗した場合にエラーを返します。
     pub fn load() -> Result<Self> {
         Self::load_from_path(&Self::get_config_path()?)
     }
 
+    /// 指定されたパスから設定を読み込みます。
+    ///
+    /// # Arguments
+    /// * `path` - 読み込み対象のファイルパス
+    ///
+    /// # Errors
+    /// ファイルの読み込みまたはパースに失敗した場合にエラーを返します。
     pub fn load_from_path(path: &Path) -> Result<Self> {
         if !path.exists() {
             return Ok(Self::default());
@@ -76,10 +98,22 @@ impl AppConfig {
         Ok(config)
     }
 
+    /// デフォルトのパスへ現在の設定を保存します。
+    ///
+    /// # Errors
+    /// シリアライズまたはファイルへの書き込みに失敗した場合にエラーを返します。
     pub fn save(&self) -> Result<()> {
         Self::save_to_path(self, &Self::get_config_path()?)
     }
 
+    /// 指定されたパスへ設定を保存します。
+    /// 親ディレクトリが存在しない場合は作成を試みます。
+    ///
+    /// # Arguments
+    /// * `path` - 保存先のファイルパス
+    ///
+    /// # Errors
+    /// シリアライズまたはファイルへの書き込みに失敗した場合にエラーを返します。
     pub fn save_to_path(&self, path: &Path) -> Result<()> {
         if let Some(parent) = path.parent() {
             if !parent.exists() {
@@ -116,5 +150,28 @@ mod tests {
 
         assert_eq!(config, loaded);
         assert_eq!(loaded.language, Some(Language::Ja));
+    }
+
+    #[test]
+    fn test_app_config_default_is_empty() {
+        let config = AppConfig::default();
+        assert!(config.language.is_none());
+        assert!(config.default_account.is_none());
+        assert!(config.accounts.is_empty());
+        assert!(config.path_rules.is_empty());
+    }
+
+    #[test]
+    fn test_load_non_existent_path_returns_default() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("non_existent.toml");
+        let loaded = AppConfig::load_from_path(&file_path).expect("Should not error");
+        assert_eq!(loaded, AppConfig::default());
+    }
+
+    #[test]
+    fn test_language_display() {
+        assert_eq!(Language::En.to_string(), "English");
+        assert_eq!(Language::Ja.to_string(), "日本語");
     }
 }

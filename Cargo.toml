@@ -2,6 +2,8 @@
 name = "gas"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "A lightweight Git credential helper to manage multiple accounts on Windows."
 
 [dependencies]
 # CLI引数解析
@@ -26,3 +28,5 @@ serde_json = "1.0.145"
 
 [dev-dependencies]
 tempfile = "3.23.0"
+assert_cmd = "2.0"
+predicates = "3.1"

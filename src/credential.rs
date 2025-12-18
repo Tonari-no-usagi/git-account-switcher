@@ -1,17 +1,26 @@
 use anyhow::{Context, Result};
 use keyring::Entry;
 
-/// Keyringで使用するサービス名
+/// Service name used in Keyring / Keyringで使用するサービス名
 pub const SERVICE_NAME: &str = "gas";
 
-/// 資格情報の読み書きを行うためのインターフェース
+/// An interface for reading and writing credential information.
+/// Used for abstraction with the OS credential manager (Keyring) and test mocks.
+/// 資格情報の読み書きを行うためのインターフェース。
+/// OS の資格情報マネージャー（Keyring）やテスト用の Mock との抽象化に使用されます。
 pub trait CredentialStore {
+    /// Save credentials. / 資格情報を保存します。
     fn set(&self, service: &str, username: &str, password: &str) -> Result<()>;
+
+    /// Retrieve the saved credentials. / 保存されている資格情報を取得します。
     fn get(&self, service: &str, username: &str) -> Result<String>;
+    
+    /// Delete the specified credentials. / 指定された資格情報を削除します。
     fn delete(&self, service: &str, username: &str) -> Result<()>;
 }
 
-/// 【本番用】OSの資格情報マネージャー（Keyring）を使う実装
+/// [Production Use] Implementation using the OS Credential Manager (Credential Manager in Windows).
+/// 【本番用】OS の資格情報マネージャー（Windows の場合は「資格情報マネージャー」）を使用する実装。
 pub struct KeyringStore;
 
 impl KeyringStore {
@@ -38,6 +47,7 @@ impl CredentialStore for KeyringStore {
     }
 }
 
+// --- Test mock (publicly accessible for use in external tests) ---
 // --- テスト用モック（外部のテストからも使えるように公開）---
 #[cfg(test)]
 pub use self::mock::MockStore;
