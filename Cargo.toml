@@ -3,6 +3,7 @@ name = "gas"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
+authors = ["Tonari-no-usagi"]
 description = "A lightweight Git credential helper to manage multiple accounts on Windows."
 
 [dependencies]

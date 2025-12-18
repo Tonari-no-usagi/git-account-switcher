@@ -85,5 +85,3 @@ Git Account Switcher (gas) は、Windows環境で複数のGit/GitHubアカウン
 
 ### ライセンス
 MIT License
-
----MIT License
