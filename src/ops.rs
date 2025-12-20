@@ -53,7 +53,10 @@ pub fn parse_git_input(input: &str) -> GitContext {
 pub fn setup_git_config() -> Result<()> {
     let current_exe = std::env::current_exe()
         .context("Failed to get current executable path")?;
-    let exe_path = current_exe.to_string_lossy().replace("\\", "/");
+    /// let exe_path = current_exe.to_string_lossy().replace("\\", "/");
+    
+    let exe_path = format!("\"{}\"", current_exe.to_string_lossy().replace("\\", "/"));
+    
 
     // 1. 既存のヘルパー設定を「グローバルレベル」で一度すべてクリアする
     // これをしないと、OS標準のマネージャーが優先されてしまいます
